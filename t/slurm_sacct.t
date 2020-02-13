@@ -2,10 +2,10 @@
 
 #### Copyright 2017 Henrik Stranneheim
 
-use Modern::Perl qw(2014);
+use Modern::Perl qw{ 2018 };
 use warnings qw(FATAL utf8);
 use autodie;
-use 5.018;    #Require at least perl 5.18
+use 5.026;    #Require at least perl 5.18
 use utf8;
 use open qw( :encoding(UTF-8) :std );
 use charnames qw( :full :short );
@@ -21,7 +21,7 @@ use Test::More;
 
 ## MIPs lib/
 use lib catdir( dirname($Bin), 'lib' );
-use Script::Utils qw(help);
+use MIP::Script::Utils qw(help);
 
 our $USAGE = build_usage( {} );
 
@@ -37,15 +37,14 @@ GetOptions(
     },    #Display help text
     'v|version' => sub {
         done_testing();
-        print {*STDOUT} "\n" . basename($PROGRAM_NAME) . q{  } . $VERSION,
-          "\n\n";
+        print {*STDOUT} "\n" . basename($PROGRAM_NAME) . q{  } . $VERSION, "\n\n";
         exit;
     },    #Display version number
     'vb|verbose' => $VERBOSE,
   )
   or (
     done_testing(),
-    Script::Utils::help(
+    help(
         {
             USAGE     => $USAGE,
             exit_code => 1,
@@ -59,7 +58,7 @@ BEGIN {
 ##Modules with import
     my %perl_module;
 
-    $perl_module{'Script::Utils'} = [qw(help)];
+    $perl_module{'MIP::Script::Utils'} = [qw(help)];
 
     while ( my ( $module, $module_import ) = each %perl_module ) {
 
@@ -80,11 +79,10 @@ use MIP::Workloadmanager::Slurm qw(slurm_sacct);
 use MIP::Test::Commands qw(test_function);
 
 diag(
-"Test slurm_sacct $MIP::Workloadmanager::Slurm::VERSION, Perl $^V, $EXECUTABLE_NAME"
-);
+    "Test slurm_sacct $MIP::Workloadmanager::Slurm::VERSION, Perl $^V, $EXECUTABLE_NAME");
 
 ## Base arguments
-my $function_base_command = 'sacct';
+my @function_base_commands = 'sacct';
 
 my %base_argument = (
     stdoutfile_path => {
@@ -95,13 +93,13 @@ my %base_argument = (
         input           => 'stderrfile.test',
         expected_output => '2> stderrfile.test',
     },
-		      stderrfile_path_append => {
+    stderrfile_path_append => {
         input           => 'stderrfile.test',
         expected_output => '2>> stderrfile.test',
     },
-    FILEHANDLE => {
+    filehandle => {
         input           => undef,
-        expected_output => $function_base_command,
+        expected_output => \@function_base_commands,
     },
 );
 
@@ -127,9 +125,9 @@ foreach my $argument_href (@arguments) {
 
     my @commands = test_function(
         {
-            argument_href           => $argument_href,
-            module_function_cref    => $module_function_cref,
-            function_base_command   => $function_base_command,
+            argument_href              => $argument_href,
+            module_function_cref       => $module_function_cref,
+            function_base_commands_ref => \@function_base_commands,
         }
     );
 }
