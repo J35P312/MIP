@@ -5,6 +5,7 @@
 [![GitHub license](https://img.shields.io/badge/License-MIT-blue.svg)](https://raw.githubusercontent.com/Clinical-Genomics/MIP/master/LICENSE)
 [![GitHub Releases](https://img.shields.io/github/release/Clinical-Genomics/MIP.svg)](https://github.com/Clinical-Genomics/MIP/releases)
 [![GitHub Issues](https://img.shields.io/github/issues/Clinical-Genomics/MIP.svg)](https://github.com/Clinical-Genomics/MIP/issues)
+[![CodeFactor](https://www.codefactor.io/repository/github/clinical-genomics/mip/badge)](https://www.codefactor.io/repository/github/clinical-genomics/mip)
 
 MIP enables identification of potential disease causing variants from sequencing data.
 
@@ -191,7 +192,7 @@ You can always supply `mip [process] [pipeline] --help` to list all available pa
 
 Example usage:
 ```Bash
-$ mip analyse rd_dna case_3 --sample_ids 3-1-1A --sample_ids 3-2-1U --sample_ids 3-2-2U --start_with_recipe picardtools_mergesamfiles --config 3_config.yaml
+$ mip analyse rd_dna case_3 --sample_ids 3-1-1A --sample_ids 3-2-1U --sample_ids 3-2-2U --start_with_recipe samtools_merge --config 3_config.yaml
 ```
 
 This will analyse case 3 using 3 individuals from that case and begin the analysis with recipes after Bwa mem and use all parameter values as specified in the config file except those supplied on the command line, which has precedence.

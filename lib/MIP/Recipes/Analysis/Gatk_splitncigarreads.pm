@@ -27,7 +27,7 @@ BEGIN {
     use base qw{ Exporter };
 
     # Set the version for version checking
-    our $VERSION = 1.15;
+    our $VERSION = 1.16;
 
     # Functions and variables which can be optionally exported
     our @EXPORT_OK = qw{ analysis_gatk_splitncigarreads };
@@ -158,7 +158,7 @@ sub analysis_gatk_splitncigarreads {
     use MIP::Cluster qw{ get_parallel_processes };
     use MIP::Get::File qw{ get_io_files };
     use MIP::Get::Parameter qw{ get_recipe_attributes get_recipe_resources };
-    use MIP::Gnu::Coreutils qw{ gnu_cp };
+    use MIP::Program::Gnu::Coreutils qw{ gnu_cp };
     use MIP::Parse::File qw{ parse_io_outfiles };
     use MIP::Processmanagement::Processes qw{ submit_recipe };
     use MIP::Program::Gatk qw{ gatk_splitncigarreads };
@@ -210,7 +210,7 @@ sub analysis_gatk_splitncigarreads {
                 id               => $sample_id,
                 file_info_href   => $file_info_href,
                 file_name_prefix => $infile_name_prefix,
-                iterators_ref    => $file_info_href->{contigs_size_ordered},
+                iterators_ref    => $file_info_href->{bam_contigs_size_ordered},
                 outdata_dir      => $active_parameter_href->{outdata_dir},
                 parameter_href   => $parameter_href,
                 recipe_name      => $recipe_name,
@@ -278,7 +278,7 @@ sub analysis_gatk_splitncigarreads {
 
   CONTIG:
     while ( my ( $infile_index, $contig ) =
-        each @{ $file_info_href->{contigs_size_ordered} } )
+        each @{ $file_info_href->{bam_contigs_size_ordered} } )
     {
 
         my $stderrfile_path =

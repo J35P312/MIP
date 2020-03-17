@@ -27,7 +27,7 @@ BEGIN {
     use base qw{ Exporter };
 
     # Set the version for version checking
-    our $VERSION = 1.19;
+    our $VERSION = 1.20;
 
     # Functions and variables which can be optionally exported
     our @EXPORT_OK =
@@ -138,7 +138,7 @@ sub analysis_gatk_variantrecalibration_wes {
     use MIP::Pedigree qw{ create_fam_file };
     use MIP::Get::File qw{ get_io_files };
     use MIP::Get::Parameter qw{ get_recipe_attributes get_recipe_resources };
-    use MIP::Gnu::Coreutils qw{ gnu_mv };
+    use MIP::Program::Gnu::Coreutils qw{ gnu_mv };
     use MIP::Processmanagement::Processes qw{ submit_recipe };
     use MIP::Program::Bcftools qw{ bcftools_norm };
     use MIP::Program::Gatk
@@ -243,13 +243,13 @@ sub analysis_gatk_variantrecalibration_wes {
     my $fam_file_path = catfile( $outdir_path_prefix, $case_id . $DOT . q{fam} );
     create_fam_file(
         {
-            active_parameter_href => $active_parameter_href,
-            execution_mode        => q{system},
-            fam_file_path         => $fam_file_path,
-            filehandle            => $filehandle,
-            log                   => $log,
-            parameter_href        => $parameter_href,
-            sample_info_href      => $sample_info_href,
+            case_id          => $case_id,
+            execution_mode   => q{system},
+            fam_file_path    => $fam_file_path,
+            filehandle       => $filehandle,
+            parameter_href   => $parameter_href,
+            sample_ids_ref   => $active_parameter_href->{sample_ids},
+            sample_info_href => $sample_info_href,
         }
     );
 
@@ -619,7 +619,7 @@ sub analysis_gatk_variantrecalibration_wgs {
     use MIP::Pedigree qw{ create_fam_file gatk_pedigree_flag };
     use MIP::Get::File qw{ get_io_files };
     use MIP::Get::Parameter qw{ get_recipe_attributes get_recipe_resources };
-    use MIP::Gnu::Coreutils qw{ gnu_mv };
+    use MIP::Program::Gnu::Coreutils qw{ gnu_mv };
     use MIP::Parse::File qw{ parse_io_outfiles };
     use MIP::Processmanagement::Processes qw{ submit_recipe };
     use MIP::Program::Bcftools qw{ bcftools_norm };
@@ -728,13 +728,13 @@ sub analysis_gatk_variantrecalibration_wgs {
     my $fam_file_path = catfile( $outdir_path_prefix, $case_id . $DOT . q{fam} );
     create_fam_file(
         {
-            active_parameter_href => $active_parameter_href,
-            execution_mode        => q{system},
-            fam_file_path         => $fam_file_path,
-            filehandle            => $filehandle,
-            log                   => $log,
-            parameter_href        => $parameter_href,
-            sample_info_href      => $sample_info_href,
+            case_id          => $case_id,
+            execution_mode   => q{system},
+            fam_file_path    => $fam_file_path,
+            filehandle       => $filehandle,
+            parameter_href   => $parameter_href,
+            sample_ids_ref   => $active_parameter_href->{sample_ids},
+            sample_info_href => $sample_info_href,
         }
     );
 

@@ -24,10 +24,109 @@ BEGIN {
     use base qw{ Exporter };
 
     # Set the version for version checking
-    our $VERSION = 1.01;
+    our $VERSION = 1.03;
 
     # Functions and variables which can be optionally exported
-    our @EXPORT_OK = qw{ set_dict_contigs set_human_genome_reference_features };
+    our @EXPORT_OK = qw{
+      set_alt_loci_contigs
+      set_bam_contigs
+      set_dict_contigs
+      set_file_tag
+      set_human_genome_reference_features
+      set_primary_contigs
+    };
+}
+
+sub set_alt_loci_contigs {
+
+## Function : Set alternative loci contigs
+## Returns  :
+## Arguments: $alt_contig_set_name => Alt contig set identifier
+##          : $file_info_href      => File info hash {REF}
+##          : $primary_contig_href => Primary contig hash {REF}
+
+    my ($arg_href) = @_;
+
+    ## Flatten argument(s)
+    my $alt_contig_set_name;
+    my $file_info_href;
+    my $primary_contig_href;
+
+    my $tmpl = {
+        alt_contig_set_name => {
+            defined     => 1,
+            required    => 1,
+            store       => \$alt_contig_set_name,
+            strict_type => 1,
+        },
+        file_info_href => {
+            default     => {},
+            defined     => 1,
+            required    => 1,
+            store       => \$file_info_href,
+            strict_type => 1,
+        },
+        primary_contig_href => {
+            default     => {},
+            defined     => 1,
+            required    => 1,
+            store       => \$primary_contig_href,
+            strict_type => 1,
+        },
+    };
+
+    check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
+
+    ## Set alternative loci contig set
+    @{ $file_info_href->{$alt_contig_set_name} } =
+      grep { not exists $primary_contig_href->{$_} } @{ $file_info_href->{dict_contigs} };
+    return;
+}
+
+sub set_bam_contigs {
+
+## Function : Set bam contigs
+## Returns  :
+## Arguments: $bam_contig_set_name => Bam contig set identifier
+##          : $file_info_href      => File info hash {REF}
+##          : $primary_contigs_ref => Primary contig hash {REF}
+
+    my ($arg_href) = @_;
+
+    ## Flatten argument(s)
+    my $bam_contig_set_name;
+    my $file_info_href;
+    my $primary_contigs_ref;
+
+    my $tmpl = {
+        bam_contig_set_name => {
+            defined     => 1,
+            required    => 1,
+            store       => \$bam_contig_set_name,
+            strict_type => 1,
+        },
+        file_info_href => {
+            default     => {},
+            defined     => 1,
+            required    => 1,
+            store       => \$file_info_href,
+            strict_type => 1,
+        },
+        primary_contigs_ref => {
+            default     => [],
+            defined     => 1,
+            required    => 1,
+            store       => \$primary_contigs_ref,
+            strict_type => 1,
+        },
+    };
+
+    check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
+
+    ## Set bam contig sets
+    @{ $file_info_href->{$bam_contig_set_name} } = @{$primary_contigs_ref};
+
+    return;
 }
 
 sub set_dict_contigs {
@@ -86,11 +185,62 @@ sub set_dict_contigs {
 ## File needs to be built before getting contigs
     return if ($build_status);
 
-    @{ $file_info_href->{contigs} } = get_dict_contigs(
+    @{ $file_info_href->{dict_contigs} } = get_dict_contigs(
         {
             dict_file_path => $dict_file_path,
         }
     );
+
+    return;
+}
+
+sub set_file_tag {
+
+## Function : Set the file tag depending on id, branch and recipe
+## Returns  :
+## Arguments: $file_info_href => Info on files hash {REF}
+##          : $file_tag       => File tag to set
+##          : $id             => To change id for case or sample
+##          : $recipe_name    => Recipe to add file tag for
+
+    my ($arg_href) = @_;
+
+    ## Flatten argument(s)
+    my $file_info_href;
+    my $file_tag;
+    my $id;
+    my $recipe_name;
+
+    my $tmpl = {
+        file_info_href => {
+            default     => {},
+            defined     => 1,
+            required    => 1,
+            store       => \$file_info_href,
+            strict_type => 1,
+        },
+        file_tag => {
+            required    => 1,
+            store       => \$file_tag,
+            strict_type => 1,
+        },
+        id => {
+            defined     => 1,
+            required    => 1,
+            store       => \$id,
+            strict_type => 1,
+        },
+        recipe_name => {
+            defined     => 1,
+            required    => 1,
+            store       => \$recipe_name,
+            strict_type => 1,
+        },
+    };
+
+    check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
+
+    $file_info_href->{$id}{$recipe_name}{file_tag} = $file_tag;
 
     return;
 }
@@ -201,6 +351,52 @@ sub set_human_genome_reference_features {
             }
         );
     }
+    return;
+}
+
+sub set_primary_contigs {
+
+## Function : Set primary contigs
+## Returns  :
+## Arguments: $file_info_href          => File info hash {REF}
+##          : $primary_contigs_ref     => Primary contig hash {REF}
+##          : $primary_contig_set_name => Primary contig set identifier
+
+    my ($arg_href) = @_;
+
+    ## Flatten argument(s)
+    my $file_info_href;
+    my $primary_contigs_ref;
+    my $primary_contig_set_name;
+
+    my $tmpl = {
+        file_info_href => {
+            default     => {},
+            defined     => 1,
+            required    => 1,
+            store       => \$file_info_href,
+            strict_type => 1,
+        },
+        primary_contigs_ref => {
+            default     => [],
+            defined     => 1,
+            required    => 1,
+            store       => \$primary_contigs_ref,
+            strict_type => 1,
+        },
+        primary_contig_set_name => {
+            defined     => 1,
+            required    => 1,
+            store       => \$primary_contig_set_name,
+            strict_type => 1,
+        },
+    };
+
+    check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
+
+    ## Set primary contig sets
+    @{ $file_info_href->{$primary_contig_set_name} } = @{$primary_contigs_ref};
+
     return;
 }
 

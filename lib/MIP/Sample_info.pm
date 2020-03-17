@@ -16,7 +16,6 @@ use warnings qw{ FATAL utf8 };
 
 ## CPANM
 use autodie qw{ :all };
-use Readonly;
 
 ## MIPs lib/
 use MIP::Constants qw{ $COLON $DOT $EMPTY_STR $LOG_NAME $NEWLINE $SPACE $UNDERSCORE };
@@ -27,7 +26,7 @@ BEGIN {
     use base qw{Exporter};
 
     # Set the version for version checking
-    our $VERSION = 1.23;
+    our $VERSION = 1.26;
 
     # Functions and variables which can be optionally exported
     our @EXPORT_OK = qw{
@@ -44,6 +43,7 @@ BEGIN {
       set_gene_panel
       set_infile_info
       set_most_complete_vcf
+      set_no_dry_run_parameters
       set_parameter_in_sample_info
       set_processing_metafile_in_sample_info
       set_recipe_metafile_in_sample_info
@@ -135,7 +135,7 @@ sub get_family_member_id {
 sub get_pedigree_sample_id_attributes {
 
 ## Function : Get pedigree sample id attribute
-## Returns  : $attribute
+## Returns  : $attribute | %attribute
 ## Arguments: $attribute        => Attribute key
 ##          : $sample_id        => Sample id to get attribute for
 ##          : $sample_info_href => Info on samples and case hash {REF}
@@ -660,7 +660,7 @@ sub set_file_path_to_store {
 
     my $tmpl = {
         format => {
-            allow       => [qw{ fastq bam bcf cram meta vcf }],
+            allow       => [qw{ bam bb bcf bed bw cram fastq meta tar vcf wig }],
             defined     => 1,
             required    => 1,
             store       => \$format,
@@ -1173,33 +1173,40 @@ sub set_most_complete_vcf {
     return;
 }
 
-sub set_parameter_in_sample_info {
+sub set_no_dry_run_parameters {
 
-##Function : Sets parameter to sample info
-##Returns  :
-##Arguments: $active_parameter_href => Active parameters for this analysis hash {REF}
-##         : $key_to_add            => Key and value to add
-##         : $sample_info_href      => Info on samples and case hash {REF}
+## Function : Set parameters for true run i.e. not a dry run
+## Returns  :
+## Arguments: $analysis_date    => Analysis date
+##          : $is_dry_run_all   => Dry run boolean
+##          : $mip_version      => MIP version
+##          : $sample_info_href => Info on samples and case hash {REF}
 
     my ($arg_href) = @_;
 
     ## Flatten argument(s)
-    my $active_parameter_href;
-    my $key_to_add;
+    my $analysis_date;
+    my $is_dry_run_all;
+    my $mip_version;
     my $sample_info_href;
 
     my $tmpl = {
-        active_parameter_href => {
-            default     => {},
+        analysis_date => {
             defined     => 1,
             required    => 1,
-            store       => \$active_parameter_href,
+            store       => \$analysis_date,
             strict_type => 1,
         },
-        key_to_add => {
+        is_dry_run_all => {
+            allow       => [ 0, 1, undef ],
+            required    => 1,
+            store       => \$is_dry_run_all,
+            strict_type => 1,
+        },
+        mip_version => {
             defined     => 1,
             required    => 1,
-            store       => \$key_to_add,
+            store       => \$mip_version,
             strict_type => 1,
         },
         sample_info_href => {
@@ -1213,11 +1220,68 @@ sub set_parameter_in_sample_info {
 
     check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
 
-    if ( exists $active_parameter_href->{$key_to_add} ) {
+    return if ($is_dry_run_all);
 
-        $sample_info_href->{$key_to_add} = $active_parameter_href->{$key_to_add};
+    my %no_dry_run_info = (
+        analysisrunstatus => q{not_finished},
+        analysis_date     => $analysis_date,
+        mip_version       => $mip_version,
+    );
+
+  PARAMETER_NAME:
+    while ( my ( $parameter_name, $parameter_value ) = each %no_dry_run_info ) {
+
+        set_in_sample_info(
+            {
+                key              => $parameter_name,
+                sample_info_href => $sample_info_href,
+                value            => $parameter_value,
+            }
+        );
     }
+    return;
+}
 
+sub set_in_sample_info {
+
+##Function : Sets key and value in sample info
+##Returns  :
+##Arguments: $key              => Key to add
+##         : $sample_info_href => Info on samples and case hash {REF}
+##         : $value            => Value to add
+
+    my ($arg_href) = @_;
+
+    ## Flatten argument(s)
+    my $key;
+    my $sample_info_href;
+    my $value;
+
+    my $tmpl = {
+        key => {
+            defined     => 1,
+            required    => 1,
+            store       => \$key,
+            strict_type => 1,
+        },
+        sample_info_href => {
+            default     => {},
+            defined     => 1,
+            required    => 1,
+            store       => \$sample_info_href,
+            strict_type => 1,
+        },
+        value => {
+            required => 1,
+            store    => \$value,
+        },
+    };
+
+    check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
+
+    return if ( not defined $value );
+
+    $sample_info_href->{$key} = $value;
     return;
 }
 
@@ -1509,7 +1573,7 @@ sub set_recipe_metafile_in_sample_info {
     return;
 }
 
-sub set_in_sample_info {
+sub set_parameter_in_sample_info {
 
 ## Function : Sets parameter info to sample_info
 ## Returns  :
@@ -1581,11 +1645,11 @@ sub set_in_sample_info {
   PARAMETER:
     foreach my $key_to_add (@add_keys) {
 
-        set_parameter_in_sample_info(
+        set_in_sample_info(
             {
-                active_parameter_href => $active_parameter_href,
-                key_to_add            => $key_to_add,
-                sample_info_href      => $sample_info_href,
+                key              => $key_to_add,
+                sample_info_href => $sample_info_href,
+                value            => $active_parameter_href->{$key_to_add},
             }
         );
     }

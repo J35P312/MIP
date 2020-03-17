@@ -25,7 +25,7 @@ BEGIN {
     use base qw{ Exporter };
 
     # Set the version for version checking
-    our $VERSION = 1.06;
+    our $VERSION = 1.07;
 
     # Functions and variables which can be optionally exported
     our @EXPORT_OK = qw{ build_human_genome_prerequisites };
@@ -157,7 +157,7 @@ sub build_human_genome_prerequisites {
     check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
 
     use MIP::Get::Parameter qw{ get_recipe_resources };
-    use MIP::Gnu::Coreutils qw{ gnu_rm gnu_ln };
+    use MIP::Program::Gnu::Coreutils qw{ gnu_rm gnu_ln };
     use MIP::Language::Java qw{ java_core };
     use MIP::Language::Shell qw{ check_exist_and_move_file };
     use MIP::Program::Gzip qw{ gzip };
@@ -220,9 +220,9 @@ sub build_human_genome_prerequisites {
         ## Perl wrapper for writing gzip recipe to $filehandle
         gzip(
             {
-                decompress  => 1,
-                infile_path => $human_genome_reference,
-                filehandle  => $filehandle,
+                decompress       => 1,
+                infile_paths_ref => [$human_genome_reference],
+                filehandle       => $filehandle,
             }
         );
         say {$filehandle} $NEWLINE;

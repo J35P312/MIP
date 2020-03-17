@@ -1,17 +1,15 @@
 ################## BASE IMAGE ######################
 
-FROM clinicalgenomics/mip:latest
+FROM clinicalgenomics/mip:2.0
 
 ################## METADATA ######################
 
-LABEL base_image="clinicalgenomics/mip:latest"
-LABEL version="1"
+LABEL base_image="clinicalgenomics/mip:2.0"
+LABEL version="2"
 LABEL software="chromograph"
-LABEL software.version="0.1.2"
+LABEL software.version="91f0988"
 LABEL extra.binaries="chromograph"
-
-################## MAINTAINER ######################
-MAINTAINER Clinical-Genomics/MIP
+LABEL maintainer="Clinical-Genomics/MIP"
 
 RUN conda install pip python=3.7 matplotlib
 
@@ -23,6 +21,7 @@ RUN git clone https://github.com/mikaell/chromograph.git /opt/conda/share/chromo
 
 ## Move to chromograph directory
 RUN cd /opt/conda/share/chromograph && \
+    git checkout 91f0988 && \
     python -m pip install --editable .
 
 WORKDIR /data/

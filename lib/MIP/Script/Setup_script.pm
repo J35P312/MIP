@@ -29,7 +29,7 @@ BEGIN {
     require Exporter;
 
     # Set the version for version checking
-    our $VERSION = 1.09;
+    our $VERSION = 1.12;
 
     # Functions and variables which can be optionally exported
     our @EXPORT_OK =
@@ -127,7 +127,7 @@ sub setup_install_script {
 
     check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
 
-    use MIP::Gnu::Bash qw{ gnu_set };
+    use MIP::Program::Gnu::Bash qw{ gnu_set };
     use MIP::Workloadmanager::Slurm qw{ slurm_build_sbatch_header };
 
     ## Set $bash_bin_path default
@@ -417,8 +417,8 @@ sub setup_script {
     check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
 
     use MIP::Check::Path qw{ check_file_version_exist };
-    use MIP::Gnu::Bash qw{ gnu_set gnu_ulimit };
-    use MIP::Gnu::Coreutils qw{ gnu_echo gnu_mkdir gnu_sleep };
+    use MIP::Program::Gnu::Bash qw{ gnu_set gnu_ulimit };
+    use MIP::Program::Gnu::Coreutils qw{ gnu_echo gnu_mkdir gnu_sleep };
     use MIP::Language::Shell
       qw{ build_shebang create_housekeeping_function create_error_trap_function enable_trap quote_bash_variable };
     use MIP::Workloadmanager::Slurm qw{ slurm_build_sbatch_header };
@@ -686,14 +686,16 @@ sub write_return_to_environment {
 
     check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
 
-    use MIP::Get::Parameter qw{ get_env_method_cmds get_package_env_attributes };
+    use MIP::Active_parameter qw{ get_package_env_attributes };
+    use MIP::Environment::Manager qw{ get_env_method_cmds };
+
     my @env_method_cmds;
 
     ## Get MIPs MAIN env
     my ( $env_name, $env_method ) = get_package_env_attributes(
         {
-            active_parameter_href => $active_parameter_href,
-            package_name          => q{mip},
+            load_env_href => $active_parameter_href->{load_env},
+            package_name  => q{mip},
         }
     );
 
@@ -741,7 +743,7 @@ sub write_return_to_conda_environment {
 
     check( $tmpl, $arg_href, 1 ) or croak q{Could not parse arguments!};
 
-    use MIP::Package_manager::Conda qw{ conda_deactivate };
+    use MIP::Program::Conda qw{ conda_deactivate };
 
     ## Return to main environment
     if ( @{$source_main_environment_commands_ref}

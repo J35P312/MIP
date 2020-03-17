@@ -20,12 +20,17 @@ use Modern::Perl qw{ 2018 };
 use Readonly;
 
 ## MIPs lib/
-use MIP::Active_parameter qw{ update_to_absolute_path };
+use MIP::Active_parameter qw{
+  check_recipe_mode
+  parse_recipe_resources
+  set_load_env_environment
+  update_recipe_mode_with_dry_run_all
+  update_to_absolute_path
+};
 use MIP::Check::Download qw{ check_user_reference };
-use MIP::Check::Parameter qw{ check_recipe_mode };
 use MIP::Config qw{ check_cmd_config_vs_definition_file set_config_to_active_parameters };
 use MIP::Constants
-  qw{ $COLON $COMMA $DOT $MIP_VERSION $NEWLINE $SINGLE_QUOTE $SPACE $UNDERSCORE };
+  qw{ $COLON $COMMA $DOT $LOG_NAME $MIP_VERSION $NEWLINE $SINGLE_QUOTE $SPACE $UNDERSCORE };
 use MIP::Environment::Cluster qw{ check_max_core_number };
 use MIP::Environment::User qw{ check_email_address };
 use MIP::Io::Read qw{ read_from_file };
@@ -36,21 +41,26 @@ use MIP::Parameter qw{
   set_default
 };
 use MIP::Parse::Parameter qw{ parse_download_reference_parameter };
+use MIP::Pipeline qw{ run_download_pipeline };
 use MIP::Recipes::Check qw{ check_recipe_exists_in_hash };
-use MIP::Recipes::Pipeline::Download_rd_dna qw{ pipeline_download_rd_dna };
-use MIP::Recipes::Pipeline::Download_rd_rna qw{ pipeline_download_rd_rna };
-use MIP::Update::Recipes qw{ update_recipe_mode_with_dry_run_all };
+use MIP::Recipes::Parse qw{ parse_recipes };
 
 BEGIN {
     use base qw{ Exporter };
 
     # Set the version for version checking
-    our $VERSION = 1.17;
+    our $VERSION = 1.20;
 
     # Functions and variables that can be optionally exported
     our @EXPORT_OK = qw{ mip_download };
 
 }
+
+## Constants
+Readonly my %RECIPE_PARAMETERS_TO_CHECK => (
+    keys     => [qw{ recipe_core_number recipe_time }],
+    elements => [qw{ associated_recipe  }],
+);
 
 sub mip_download {
 
@@ -191,54 +201,17 @@ sub mip_download {
         }
     );
 
-    ## Parameters that have keys as MIP recipe names
-    my @parameter_keys_to_check = (qw{ recipe_time recipe_core_number });
-  PARAMETER_NAME:
-    foreach my $parameter_name (@parameter_keys_to_check) {
-
-        ## Test if key from query hash exists truth hash
-        check_recipe_exists_in_hash(
-            {
-                parameter_name => $parameter_name,
-                query_ref      => \%{ $active_parameter{$parameter_name} },
-                truth_href     => \%parameter,
-            }
-        );
-    }
-
-    ## Parameters with key(s) that have elements as MIP recipe names
-    my @parameter_element_to_check = qw{ associated_recipe };
-  PARAMETER:
-    foreach my $parameter ( keys %parameter ) {
-
-      KEY:
-        foreach my $parameter_name (@parameter_element_to_check) {
-
-            next KEY if ( not exists $parameter{$parameter}{$parameter_name} );
-
-            ## Test if element from query array exists truth hash
-            check_recipe_exists_in_hash(
-                {
-                    parameter_name => $parameter_name,
-                    query_ref      => \@{ $parameter{$parameter}{$parameter_name} },
-                    truth_href     => \%parameter,
-                }
-            );
+    ## Parameters that have keys or elements as MIP recipe names
+    parse_recipes(
+        {
+            active_parameter_href   => \%active_parameter,
+            parameter_href          => \%parameter,
+            parameter_to_check_href => \%RECIPE_PARAMETERS_TO_CHECK,
         }
-    }
+    );
 
-    ## Check that the module core number do not exceed the maximum per node
-    foreach my $recipe_name ( keys %{ $active_parameter{recipe_core_number} } ) {
-
-        ## Limit number of cores requested to the maximum number of cores available per node
-        $active_parameter{recipe_core_number}{$recipe_name} = check_max_core_number(
-            {
-                max_cores_per_node => $active_parameter{max_cores_per_node},
-                core_number_requested =>
-                  $active_parameter{recipe_core_number}{$recipe_name},
-            }
-        );
-    }
+    ## Check core number requested against environment provisioned
+    parse_recipe_resources( { active_parameter_href => \%active_parameter, } );
 
     ## Adds dynamic aggregate information from definitions to parameter hash
     set_cache(
@@ -255,7 +228,6 @@ sub mip_download {
     check_recipe_mode(
         {
             active_parameter_href => \%active_parameter,
-            log                   => $log,
             parameter_href        => \%parameter,
         }
     );
@@ -268,6 +240,8 @@ sub mip_download {
             recipes_ref           => \@{ $parameter{cache}{recipe} },
         }
     );
+
+    set_load_env_environment( { active_parameter_href => \%active_parameter, } );
 
     ## Remodel depending on if "--reference" was used or not as the user info is stored as a scalar per reference_id while yaml is stored as arrays per reference_id
     parse_download_reference_parameter(
@@ -286,25 +260,12 @@ sub mip_download {
 q{Will write sbatch install instructions for references to individual sbatch scripts}
     );
 
-    my $pipeline_type = $active_parameter{download_pipeline_type};
+    run_download_pipeline( { active_parameter_href => \%active_parameter, } );
 
-    ## Create dispatch table of pipelines
-    my %pipeline = (
-        rd_dna => \&pipeline_download_rd_dna,
-        rd_rna => \&pipeline_download_rd_rna,
-    );
-
-    $log->info( q{Pipeline download type: } . $pipeline_type );
-    $pipeline{$pipeline_type}->(
-        {
-            active_parameter_href => \%active_parameter,
-            temp_directory        => $active_parameter{temp_directory},
-        }
-    );
     return;
 }
 
-##Investigate potential autodie error
+## Investigate potential autodie error
 if ( $EVAL_ERROR and $EVAL_ERROR->isa(q{autodie::exception}) ) {
 
     if ( $EVAL_ERROR->matches(q{default}) ) {

@@ -21,8 +21,8 @@ use Readonly;
 use MIP::Check::Path qw{ check_future_filesystem_for_directory };
 use MIP::Constants
   qw{ $AT $BACKWARD_SLASH $DOLLAR_SIGN $DOUBLE_QUOTE $COLON $EMPTY_STR $LOG_NAME $NEWLINE $SINGLE_QUOTE $SPACE };
-use MIP::Gnu::Bash qw{ gnu_unset };
-use MIP::Gnu::Coreutils qw{ gnu_chmod gnu_echo gnu_mkdir };
+use MIP::Program::Gnu::Bash qw{ gnu_unset };
+use MIP::Program::Gnu::Coreutils qw{ gnu_chmod gnu_echo gnu_mkdir };
 use MIP::Language::Shell qw{ build_shebang };
 use MIP::Log::MIP_log4perl qw{ retrieve_log };
 use MIP::Program::Singularity qw{ singularity_exec singularity_pull };
@@ -35,7 +35,7 @@ BEGIN {
     use base qw{ Exporter };
 
     # Set the version for version checking
-    our $VERSION = 1.06;
+    our $VERSION = 1.07;
 
     # Functions and variables which can be optionally exported
     our @EXPORT_OK = qw{ install_singularity_containers };
@@ -140,9 +140,6 @@ sub install_singularity_containers {
 
         say {$filehandle} q{## Setting up } . $container . q{ container};
 
-        ## Create placeholder
-        $container_href->{program_bind_paths} = [];
-
         my $container_path = catfile( $container_dir_path, $container . q{.sif} );
 
         ## Place relative to conda proxy bin
@@ -165,7 +162,7 @@ sub install_singularity_containers {
             $finish_container_installation{$container}->(
                 {
                     active_parameter_href => $active_parameter_href,
-                    container_href        => $container_href,
+                    container_href        => $container_href->{$container},
                     container_path        => $container_path,
                     filehandle            => $filehandle,
                 }
@@ -175,11 +172,12 @@ sub install_singularity_containers {
         ## Make available as exeuctable in bin
         setup_singularity_executable(
             {
-                conda_env_path         => $conda_env_path,
-                container_path         => $relative_container_path,
-                executable_href        => $container_href->{$container}{executable},
-                filehandle             => $filehandle,
-                program_bind_paths_ref => $container_href->{program_bind_paths},
+                conda_env_path  => $conda_env_path,
+                container_path  => $relative_container_path,
+                executable_href => $container_href->{$container}{executable},
+                filehandle      => $filehandle,
+                program_bind_paths_ref =>
+                  $container_href->{$container}{program_bind_paths},
             }
         );
         print {$filehandle} $NEWLINE;
@@ -229,7 +227,7 @@ sub setup_singularity_executable {
             store    => \$filehandle,
         },
         program_bind_paths_ref => {
-            default     => [],
+            default     => $arg_href->{program_bind_paths_ref} ||= [],
             store       => \$program_bind_paths_ref,
             strict_type => 1,
         },

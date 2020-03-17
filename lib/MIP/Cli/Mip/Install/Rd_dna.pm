@@ -24,7 +24,7 @@ use MIP::Get::Parameter qw{ get_install_parameter_attribute };
 use MIP::Main::Install qw{ mip_install };
 use MIP::Script::Utils qw{ print_parameter_defaults };
 
-our $VERSION = 2.18;
+our $VERSION = 2.21;
 
 extends(qw{ MIP::Cli::Mip::Install });
 
@@ -97,8 +97,8 @@ sub _build_usage {
         q{environment_name} => (
             cmd_aliases   => [qw{ envn }],
             cmd_flag      => q{environment_name},
-            cmd_tags      => [q{Default: MIP_rd-dna}],
-            documentation => q{Set environment names},
+            cmd_tags      => [q{Default: mip_rd_dna}],
+            documentation => q{Set environment name},
             is            => q{rw},
             isa           => Str,
         ),
@@ -119,7 +119,7 @@ sub _build_usage {
                           manta mip_scripts multiqc numpy peddy picard pip
                           plink python rhocall rtg-tools sambamba
                           smncopynumbercaller scikit-learn stranger svdb tiddit ucsc upd
-                          varg variant_integrity vcf2cytosure vcfanno vep vt }
+                          utilities varg variant_integrity vcf2cytosure vcfanno vep vt }
                     ]
                 ),
             ],
@@ -139,10 +139,10 @@ sub _build_usage {
                         qw{ bedtools bwa bwakit cadd chanjo chromograph
                           cnvnator delly expansionhunter fastqc
                           gatk gatk4 genmod gcc htslib libxml2 libxslt
-                          manta mip_scripts multiqc numpy peddy picard pip
+                          manta mip_scripts multiqc numpy peddy picard pigz pip
                           plink python rhocall rtg-tools sambamba
                           smncopynumbercaller scikit-learn stranger svdb tiddit ucsc upd
-                          varg variant_integrity vcf2cytosure vcfanno vep vt }
+                          utilities varg variant_integrity vcf2cytosure vcfanno vep vt }
                     ]
                 ),
             ],
